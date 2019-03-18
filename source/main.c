@@ -81,7 +81,8 @@ void reboottopayload(const char *payloc){
         fclose(p);
         } 
 
-        if (readytoboot == true) reboot_to_payload(); 
+        if (readytoboot == true) reboot_to_payload();
+        splExit(); // if the function above fails this will be run
 }
 
 char* addstrings(const char *s1, const char *s2){
@@ -123,11 +124,9 @@ void copy(const char* src, const char* dst)
 
 int main(int argc, char* argv[])
 {
-
     consoleInit(NULL);
     refreshscreen();
     list[0] = "";
-
 
         struct dirent *de;  
         DIR *dr = opendir("/payloads/."); 
@@ -144,7 +143,11 @@ int main(int argc, char* argv[])
                         list[i] = (char*) malloc (strlen(de->d_name +1));
                         strncpy (list[i],de->d_name, strlen(de->d_name -1) );
                          if (list[i] != NULL) printf("%s\x1b[40m\n", list[i]); 
-                        i = i + 1; } } } }
+                        i = i + 1;
+                    } 
+                } 
+            } 
+        }
 
     if (strcmp(list[0], "") == 0){
     majorError = true;
@@ -160,61 +163,61 @@ int main(int argc, char* argv[])
             break;
 
         if (majorError == false){
-        if (kDown & KEY_LSTICK_DOWN || kDown & KEY_DDOWN) cursor = cursor + 1, cursorchange = true;
-        if (kDown & KEY_LSTICK_UP || kDown & KEY_DUP) cursor = cursor - 1, cursorchange = true;
-        if (cursor <= 3) cursor = 4, cursorchange = false;
-        if (cursor >= i + 4) cursor = i + 4 - 1, cursorchange = false;  
+        	if (kDown & KEY_LSTICK_DOWN || kDown & KEY_DDOWN) cursor = cursor + 1, cursorchange = true;
+        	if (kDown & KEY_LSTICK_UP || kDown & KEY_DUP) cursor = cursor - 1, cursorchange = true;
+        	if (cursor <= 3) cursor = 4, cursorchange = false;
+        	if (cursor >= i + 4) cursor = i + 4 - 1, cursorchange = false;  
 
-        if (cursorchange == true){
-            cursorchange = false;
-            printf("\x1b[4;1H");
-            for (a = 0; i >= a; a++){
-                if (list[a] != NULL) {
-                    if (cursor == a + 4) printf("\x1b[42m%s\n", list[a]); 
-                    else printf("\x1b[40m%s\n", list[a]); } } }
-
-        if (kDown & KEY_Y){
-            printf("\x1b[46m\x1b[38;1HAdding %s as favorite payload... ", list[cursor - 4]);
-            consoleUpdate(NULL);
-            copy(addstrings("/payloads/", list[cursor - 4]), "/payloads/favorite.payload");
-            refreshscreen();
-            printf("\x1b[46m\x1b[38;1H%s added as favorite payload!", list[cursor - 4]);
-        }
-
-        if (kDown & KEY_MINUS){
-            printf("\x1b[46m\x1b[38;1HAdding %s as Atmosphere reboot payload... ", list[cursor - 4]);
-            consoleUpdate(NULL);
-            copy(addstrings("/payloads/", list[cursor - 4]), "/atmosphere/reboot_payload.bin");
-            refreshscreen();
-            printf("\x1b[46m\x1b[38;1H%s added as Atmosphere reboot payload! Note: will only take effect after a reboot.", list[cursor - 4]);
-        }
-
-        if (kDown & KEY_A){
-            refreshscreen();
-            printf("\x1b[40m\x1b[4;1HAre you sure you want to launch %s?\n\n", list[cursor - 4]);
-            while(1){
-                hidScanInput();
-                u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-                if (kDown & KEY_A) {
-                    reboottopayload(addstrings("/payloads/", list[cursor - 4]));
-                }
-
-                if (kDown & KEY_B) break;
-
-                consoleUpdate(NULL);
-            }
-            refreshscreen();
+        	if (cursorchange == true){
+        	    cursorchange = false;
+        	    printf("\x1b[4;1H");
+        	    for (a = 0; i >= a; a++){
+        	        if (list[a] != NULL){
+        	            if (cursor == a + 4) printf("\x1b[42m%s\n", list[a]); 
+        	            else printf("\x1b[40m%s\n", list[a]); 
+        	        } 
+        	    } 
         	}
 
-        if (kDown & KEY_X){
-        	if (access("/payloads/favorite.payload", F_OK) != -1)
+        	if (kDown & KEY_Y){
+        	    printf("\x1b[46m\x1b[38;1HAdding %s as favorite payload... ", list[cursor - 4]);
+        	    consoleUpdate(NULL);
+        	    copy(addstrings("/payloads/", list[cursor - 4]), "/payloads/favorite.payload");
+        	    refreshscreen();
+        	    printf("\x1b[46m\x1b[38;1H%s added as favorite payload!", list[cursor - 4]);
+        	}
+
+        	if (kDown & KEY_MINUS){
+        	    printf("\x1b[46m\x1b[38;1HAdding %s as Atmosphere reboot payload... ", list[cursor - 4]);
+        	    consoleUpdate(NULL);
+        	    copy(addstrings("/payloads/", list[cursor - 4]), "/atmosphere/reboot_payload.bin");
+        	    refreshscreen();
+        	    printf("\x1b[46m\x1b[38;1H%s added as Atmosphere reboot payload! Note: will only take effect after a reboot.", list[cursor - 4]);
+        	}
+
+        	if (kDown & KEY_A){
+        	    refreshscreen();
+        	    printf("\x1b[40m\x1b[4;1HAre you sure you want to launch %s?\n\n", list[cursor - 4]);
+        	    	while(1){
+        	        hidScanInput();
+        	        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+
+        	        	if (kDown & KEY_A) {
+        	        	    reboottopayload(addstrings("/payloads/", list[cursor - 4]));
+        	        	}
+
+        	        if (kDown & KEY_B) break;
+        	        consoleUpdate(NULL);
+        	   		}
+        	    refreshscreen();
+        	}
+
+        	if (kDown & KEY_X){
         		reboottopayload("/payloads/favorite.payload");
-        }
-      }
+        	}
+     	}
         consoleUpdate(NULL);
     }
-
-    if (readytoboot == true) splExit();
 
     closedir(dr);  
     consoleExit(NULL);
