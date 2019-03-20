@@ -94,8 +94,8 @@ char* addstrings(const char *s1, const char *s2){
 
 void refreshscreen(){
     consoleInit(NULL);
-    printf("\x1b[40m\x1b[40;1HFavorite a payload (Y)\nLaunch favorite payload (X)\nSelect payload (A)\nCancel (B)\nAdd payload as reboot_payload from atmos (Minus)\nQuit (Plus)");
-    printf("\x1b[1;1HPayload launcher (Reboot to payload++). Only works on Atmosphere!\n---------------------------------------\n\n");
+    printf("\x1b[40m\x1b[40;1HFavorite a payload (Y)\nLaunch favorite payload (X)\nSelect payload (A)\nCancel (B)\nAdd selected payload as reboot_payload for Atmosphere (Minus)\nQuit (Plus)");
+    printf("\x1b[1;1HPayload launcher (Reboot to payload++).\n---------------------------------------\n\n");
     cursorchange = true;
 }
 
@@ -105,7 +105,7 @@ void copy(const char* src, const char* dst)
     FILE* out = fopen(dst, "wb");
     if(in == NULL || out == NULL)
     {
-        printf("An error occured");
+        printf("\nAn error occured");
     }
     else
     {
