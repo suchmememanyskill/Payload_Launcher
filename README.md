@@ -1,7 +1,7 @@
 # Payload_Launcher
-Uses the atmosphere reboot to payload to launch payloads.
+Uses the reboot to payload system to launch payloads.
 
-Note: also works on sx as sx copied atmosphere's exosphere. (still sx is the worst cfw in my opinion)
+Works on atmosphere. Should also work on sx and reinx.
 
 ![Img](screenshot.jpg)
 
