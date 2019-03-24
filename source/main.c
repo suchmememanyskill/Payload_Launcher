@@ -138,10 +138,13 @@ int main(int argc, char* argv[])
     begin:
     consoleInit(NULL);
     FILE* file = fopen("payload_config.ini", "rb");
+    //save payload before deleting, write back if cancel
     majorError = false;
     if (file == NULL){
     	temp = 1;
-    	printf("No config detected!: Choose your preferred payload folder location:\n");
+    	if (location != NULL) printf("\x1b[45;1HCancel (B)\x1b[1;1H");
+    	else printf("No config detected! Launching inital setup:\n");
+    	printf("Choose your preferred payload folder location:\x1b[44;1HSelect (A)");
     	list[0] = "/payloads/";
     	checkforfolder("/bootloader/payloads/");
     	checkforfolder("/argon/payloads/");
@@ -163,6 +166,9 @@ int main(int argc, char* argv[])
         		location = list[cursor - 4];
         		break;
         	}
+
+        	if (kDown & KEY_B && location != NULL) break;
+
     		if (cursorchange == true){
         	    cursorchange = false;
         	    printf("\x1b[4;1H");
@@ -201,11 +207,11 @@ int main(int argc, char* argv[])
 
         if (dr == NULL)
         { 
-            printf("\x1b[20;1HError: Could not open payload directory, Defaulting to /payloads...\x1b[4;1H");
+            printf("\x1b[4;1HError: Could not open payload directory, Defaulting to /payloads...\x1b[4;1H");
             dr = opendir("/payloads/."); 
             if (dr == NULL) mkdir("sdmc:/payloads/", 0777);
             dr = opendir("/payloads/."); 
-
+            location = "/payloads/";
         } 
 
         i = 0;
