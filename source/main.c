@@ -58,7 +58,7 @@ static void reboot_to_payload(void) {
 
 // END ATMOSPHERE CODE -----------------------------------------------------------------
 
-bool majorError = false, cursorchange = false, readytoboot = false;
+bool majorError = false, cursorchange = false, readytoboot = false, invalidinput = false;
 char *list[20];
 int i = 0, cursor = 4, lastcursorvalue = 4, t = 0, a = 0;
 char *location = 0;
@@ -85,6 +85,32 @@ void reboottopayload(const char *payloc){
 
         if (readytoboot == true) reboot_to_payload();
         splExit(); // if the function above fails this will be run
+}
+
+char* keyboard(char* message, size_t size){
+	SwkbdConfig	skp; 
+	Result keyrc = swkbdCreate(&skp, 0);
+	char* out = NULL;
+	out = (char *)calloc(sizeof(char), size + 1);
+	if (out == NULL) out = NULL;
+	else if (R_SUCCEEDED(keyrc)){
+		swkbdConfigMakePresetDefault(&skp);
+		swkbdConfigSetGuideText(&skp, message);
+		keyrc = swkbdShow(&skp, out, size);
+		swkbdClose(&skp);	
+	}
+	else {
+	free(out);
+	out = NULL;
+	}
+	return (out);
+}
+
+void userAppInit(void)
+{
+	void *addr = NULL;
+	if (svcSetHeapSize(&addr, 0x2000000) == (Result)-1)
+		fatalSimple(0);
 }
 
 char* addstrings(const char *s1, const char *s2){
@@ -133,22 +159,38 @@ void checkforfolder(char* foldloc){
     closedir(tr);  
 }
 
+bool checkfolder(char* foldloc){
+	DIR *tr = opendir(addstrings(foldloc, "."));
+	bool rtn = false;
+	if (tr != NULL){
+			rtn = true;
+    	}
+    closedir(tr);
+    return rtn;
+}
+
 int main(int argc, char* argv[])
 {
+	userAppInit();
     begin:
     consoleInit(NULL);
     FILE* file = fopen("payload_config.ini", "rb");
-    //save payload before deleting, write back if cancel
     majorError = false;
     if (file == NULL){
     	temp = 1;
     	if (location != NULL) printf("\x1b[45;1HCancel (B)\x1b[1;1H");
     	else printf("No config detected! Launching inital setup:\n");
+    	if (invalidinput == true){
+    		printf("\x1b[41mPath does not exist!\x1b[40m\n");
+    		invalidinput = false;
+    	}
     	printf("Choose your preferred payload folder location:\x1b[44;1HSelect (A)");
     	list[0] = "/payloads/";
     	checkforfolder("/bootloader/payloads/");
     	checkforfolder("/argon/payloads/");
     	checkforfolder("/");
+    	list[temp] = "Set custom path...";
+    	temp++;
     	cursorchange = true;
     	cursor = 4;
     	while(1){
@@ -180,6 +222,11 @@ int main(int argc, char* argv[])
         	    } 
         	}
     	}
+    	if (strcmp(location, "Set custom path...") == 0) location = keyboard("Write your custom path here. Don't forget to add the / at the start and the end of the path!", 150);
+    	if (checkfolder(location) == false){
+    		invalidinput = true;
+    		goto begin;
+    	}
     	file = fopen ("payload_config.ini", "w");
     	fputs(location, file);
     }
@@ -207,7 +254,7 @@ int main(int argc, char* argv[])
 
         if (dr == NULL)
         { 
-            printf("\x1b[4;1HError: Could not open payload directory, Defaulting to /payloads...\x1b[4;1H");
+            printf("\x1b[30;1H\x1b[41mError: Could not open payload directory, Defaulting to /payloads...\x1b[4;1H");
             dr = opendir("/payloads/."); 
             if (dr == NULL) mkdir("sdmc:/payloads/", 0777);
             dr = opendir("/payloads/."); 
@@ -229,7 +276,7 @@ int main(int argc, char* argv[])
 
     if (strcmp(list[0], "") == 0){
     majorError = true;
-    printf("\x1b[40m\nError: Payloads folder is empty\nPress start to exit"); }
+    printf("\x1b[40m\nError: Folder does not contain payloads\nPress start to exit, press B to select another payload location"); }
     cursor = 4;
 
     while (appletMainLoop())
