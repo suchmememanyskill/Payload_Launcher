@@ -109,8 +109,7 @@ char* keyboard(char* message, size_t size){
 void userAppInit(void)
 {
 	void *addr = NULL;
-	if (svcSetHeapSize(&addr, 0x2000000) == (Result)-1)
-		fatalSimple(0);
+	if (svcSetHeapSize(&addr, 0x4000000) == (Result)-1) fatalSimple(0);
 }
 
 char* addstrings(const char *s1, const char *s2){
