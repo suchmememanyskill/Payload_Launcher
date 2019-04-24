@@ -264,9 +264,10 @@ int main(int argc, char* argv[])
         if (majorError == false){
             while ((de = readdir(dr)) != NULL && i != 20){
                 if (strstr(de->d_name, ".bin") != NULL){
-                    list[i] = (char*) malloc (strlen(de->d_name +1));
-                    strncpy (list[i],de->d_name, strlen(de->d_name -1) );
-                     if (list[i] != NULL) printf("%s\x1b[40m\n", list[i]); 
+                    size_t size = strlen(de->d_name) + 1;
+                    list[i] = (char*) malloc (size);
+                    strlcpy(list[i], de->d_name, size);
+                    if (list[i] != NULL) printf("%s\x1b[40m\n", list[i]); 
                     i = i + 1;
                 } 
             } 
@@ -347,6 +348,11 @@ int main(int argc, char* argv[])
         	}
      	}
         consoleUpdate(NULL);
+    }
+    
+    for(int i = 0; i < 20; i++)
+    {
+        free(list[i]);
     }
 
     closedir(dr);  
