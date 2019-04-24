@@ -58,7 +58,7 @@ static void reboot_to_payload(void) {
 
 // END ATMOSPHERE CODE -----------------------------------------------------------------
 
-bool majorError = false, cursorchange = false, readytoboot = false, invalidinput = false;
+bool majorError = false, cursorchange = false, readytoboot = false, invalidinput = false, keyinit = false;
 char *list[20];
 int i = 0, cursor = 4, lastcursorvalue = 4, t = 0, a = 0;
 char *location = 0;
@@ -87,7 +87,16 @@ void reboottopayload(const char *payloc){
         splExit(); // if the function above fails this will be run
 }
 
+void userAppInit(void){
+	void *addr = NULL;
+	if (svcSetHeapSize(&addr, 0x4000000) == (Result)-1) fatalSimple(0);
+}
+
 char* keyboard(char* message, size_t size){
+	if (keyinit == false){
+		userAppInit();
+		keyinit = true;
+	}
 	SwkbdConfig	skp; 
 	Result keyrc = swkbdCreate(&skp, 0);
 	char* out = NULL;
@@ -104,12 +113,6 @@ char* keyboard(char* message, size_t size){
 	out = NULL;
 	}
 	return (out);
-}
-
-void userAppInit(void)
-{
-	void *addr = NULL;
-	if (svcSetHeapSize(&addr, 0x4000000) == (Result)-1) fatalSimple(0);
 }
 
 char* addstrings(const char *s1, const char *s2){
@@ -170,7 +173,6 @@ bool checkfolder(char* foldloc){
 
 int main(int argc, char* argv[])
 {
-	userAppInit();
     begin:
     consoleInit(NULL);
     FILE* file = fopen("payload_config.ini", "rb");
