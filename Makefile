@@ -38,7 +38,7 @@ INCLUDES	:=	include
 EXEFS_SRC	:=	exefs_src
 APP_TITLE	:=	Payload Launcher
 APP_AUTHOR	:=	Such Meme, Many Skill
-APP_VERSION	:=	1.1.2
+APP_VERSION	:=	1.1.4
 #ROMFS	:=	romfs
 
 #---------------------------------------------------------------------------------
