@@ -351,12 +351,12 @@ int main(int argc, char* argv[])
      	}
         consoleUpdate(NULL);
     }
-    
+    /*
     for(int i = 0; i < 20; i++)
     {
         free(list[i]);
     }
-
+    */
     closedir(dr);  
     consoleExit(NULL);
     return 0;
