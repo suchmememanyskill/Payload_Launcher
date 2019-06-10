@@ -69,13 +69,13 @@ void reboottopayload(const char *payloc){
         Result rc = splInitialize();
         if (R_FAILED(rc)) {
             readytoboot = false;
-            printf("\nFailed to init spl!: 0x%x\n", rc);
+            printf("Bruh moment");
         }
            		
         FILE *p = fopen(payloc, "rb");
         if (p == NULL) { 
         readytoboot = false; 
-        printf("\nFailed to open %s\n", payloc);
+        printf("Bruh moment");
         }
 
         else {
@@ -135,7 +135,7 @@ void copy(const char* src, const char* dst)
     FILE* out = fopen(dst, "wb");
     if(in == NULL || out == NULL)
     {
-        printf("\nAn error occured");
+        printf("\nBruh moment");
     }
     else
     {
@@ -180,9 +180,9 @@ int main(int argc, char* argv[])
     if (file == NULL){
     	temp = 1;
     	if (location != NULL) printf("\x1b[45;1HCancel (B)\x1b[1;1H");
-    	else printf("No config detected! Launching inital setup:\n");
+    	else printf("Bruh moment: No config detected! Launching inital setup:\n");
     	if (invalidinput == true){
-    		printf("\x1b[41mPath does not exist!\x1b[40m\n");
+    		printf("\x1b[41mBruh moment: Path does not exist!\x1b[40m\n");
     		invalidinput = false;
     	}
     	printf("Choose your preferred payload folder location:\x1b[44;1HSelect (A)");
@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
 
         if (dr == NULL)
         { 
-            printf("\x1b[30;1H\x1b[41mError: Could not open payload directory, Defaulting to /payloads...\x1b[4;1H");
+            printf("\x1b[30;1H\x1b[41mBruh moment: Could not open payload directory, Defaulting to /payloads...\x1b[4;1H");
             dr = opendir("/payloads/."); 
             if (dr == NULL) mkdir("sdmc:/payloads/", 0777);
             dr = opendir("/payloads/."); 
@@ -278,7 +278,7 @@ int main(int argc, char* argv[])
 
     if (strcmp(list[0], "") == 0){
     majorError = true;
-    printf("\x1b[40m\nError: Folder does not contain payloads\nPress start to exit, press B to select another payload location"); }
+    printf("\x1b[40m\nBruh moment: Folder does not contain payloads\nPress start to exit, press B to select another payload location"); }
     cursor = 4;
 
     while (appletMainLoop())
