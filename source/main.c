@@ -105,13 +105,24 @@ void loadini(){
     fclose(ini);
 }
 
+void writeini(){
+     FILE *ini = fopen("payload_launcher.ini", "w+");
+     fprintf(ini, "%s\n%s", folder, favorite);
+     fclose(ini);
+}
+
 int main(int argc, char* argv[])
 {
     consoleInit(NULL);
-    
+
     if (access("payload_launcher.ini", F_OK) != -1) loadini();
 
     printf("%s\n%s", folder, favorite);
+
+    //strcpy(folder, "1");
+    //strcpy(favorite, "2");
+
+    //writeini();
 
     consoleUpdate(NULL);
 
