@@ -79,6 +79,7 @@ int reboot(const char *payloc){
 }
 
 char folder[512], favorite[512];
+char *menulist[500];
 
 void loadini(){
     char c;
@@ -111,13 +112,47 @@ void writeini(){
      fclose(ini);
 }
 
+void additem(const char *item, int spot){
+    size_t size = strlen(item) + 1;
+    menulist[spot] = (char*) malloc (size);
+    strcpy(menulist[spot], item);
+}
+
+void configmenu(){
+    int highlight = 2;
+    bool update = true;
+
+    additem("1", 0);
+    additem("2", 1);
+    additem("3", 2);
+    additem("4", 3);
+
+    while(1){
+    hidScanInput();
+    u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+
+    if (kDown & KEY_LSTICK_DOWN || kDown & KEY_DDOWN) highlight++, update = true;
+    if (kDown & KEY_LSTICK_UP || kDown & KEY_DUP) highlight--, update = true;
+
+    if (update) {
+        printarray(menulist, highlight, 0, 20, 4, 1);
+        update = false;
+    }
+
+    if (kDown & KEY_A) break;
+    consoleUpdate(NULL);
+    }
+}
+
 int main(int argc, char* argv[])
 {
     consoleInit(NULL);
 
     if (access("payload_launcher.ini", F_OK) != -1) loadini();
 
-    printf("%s\n%s", folder, favorite);
+    configmenu();
+
+    printf("\n%s\n%s\n\nMain test loop exited!", folder, favorite);
 
     //strcpy(folder, "1");
     //strcpy(favorite, "2");
@@ -130,6 +165,12 @@ int main(int argc, char* argv[])
         hidScanInput();
         u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
         if (kDown & KEY_PLUS) break;
+    }
+
+    for (int i = 0; i < 500; i++){
+        if (menulist[i] != NULL){
+            free(menulist[i]);
+        }
     }
 
     consoleExit(NULL);
