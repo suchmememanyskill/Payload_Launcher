@@ -78,7 +78,7 @@ int reboot(const char *payloc){
     return 0;
 }
 
-char folder[512], favorite[512];
+char folder[512] = "", favorite[512] = "";
 char *menulist[500];
 
 void loadini(){
@@ -118,29 +118,51 @@ void additem(const char *item, int spot){
     strcpy(menulist[spot], item);
 }
 
-void configmenu(){
-    int highlight = 2;
+void configmenu(){ //this still needs a keyboard impl
+    int highlight = 1, item_amout = 1;
     bool update = true;
 
-    additem("1", 0);
-    additem("2", 1);
-    additem("3", 2);
-    additem("4", 3);
+    additem("/payloads/", 0);
+    if(checkfolder("/bootloader/payloads/."))
+        additem("/bootloader/payloads/", item_amout++);
+    
+    if(checkfolder("/argon/payloads/."))
+        additem("/argon/payloads/", item_amout++);
+
+    if(checkfolder("/."))
+        additem("/", item_amout++);    
+
+    printf("\x1b[1;1H\x1b[47m\x1b[30mPayload_Launcher configuration menu                                             \x1b[0mSelect your desired payload folder\n-----------------------\x1b[44;1H\x1b[32m(A) Continue\n\x1b[31m(B) Cancel\x1b[0m");
 
     while(1){
-    hidScanInput();
-    u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+        hidScanInput();
+        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
 
-    if (kDown & KEY_LSTICK_DOWN || kDown & KEY_DDOWN) highlight++, update = true;
-    if (kDown & KEY_LSTICK_UP || kDown & KEY_DUP) highlight--, update = true;
+        if (kDown & KEY_LSTICK_DOWN || kDown & KEY_DDOWN) highlight++, update = true;
+        if (kDown & KEY_LSTICK_UP || kDown & KEY_DUP) highlight--, update = true;
 
-    if (update) {
-        printarray(menulist, highlight, 0, 20, 4, 1);
-        update = false;
-    }
+        if (highlight > item_amout) highlight = item_amout, update = false;
+        else if (highlight < 1) highlight = 1, update = false;
 
-    if (kDown & KEY_A) break;
-    consoleUpdate(NULL);
+        if (update) {
+            printarray(menulist, highlight, 0, 20, item_amout, 5);
+            update = false;
+        }
+
+        if (kDown & KEY_A) {
+            if (highlight == 1)
+                if (!checkfolder("/payloads/."))
+                    mkdir("sdmc:/payloads/", 0777);
+
+            strcpy(folder, menulist[highlight - 1]);
+            writeini();
+            break;
+        }
+
+        if (kDown & KEY_B)
+            break;
+        
+        consoleUpdate(NULL);
     }
 }
 
@@ -149,15 +171,10 @@ int main(int argc, char* argv[])
     consoleInit(NULL);
 
     if (access("payload_launcher.ini", F_OK) != -1) loadini();
-
-    configmenu();
+    else while(!strcmp(folder, ""))
+        configmenu();
 
     printf("\n%s\n%s\n\nMain test loop exited!", folder, favorite);
-
-    //strcpy(folder, "1");
-    //strcpy(favorite, "2");
-
-    //writeini();
 
     consoleUpdate(NULL);
 
@@ -167,11 +184,11 @@ int main(int argc, char* argv[])
         if (kDown & KEY_PLUS) break;
     }
 
-    for (int i = 0; i < 500; i++){
+    /* for (int i = 0; i < 500; i++){
         if (menulist[i] != NULL){
             free(menulist[i]);
         }
-    }
+    } */
 
     consoleExit(NULL);
     return 0;    

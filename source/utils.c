@@ -49,6 +49,21 @@ char* addstrings(const char *s1, const char *s2){
     return result;
 }
 
+char* shortenstring(const char *in, int maxlength){
+	int length;
+	char *result = (char*) malloc (maxlength + 1);
+	length = strlen(in);
+
+	if (length <= maxlength)
+		strcpy(result, in);
+	else {
+		strlcpy(result, in, maxlength - 2);
+		strcat(result, "...");
+	}
+
+	return result;
+}
+
 bool checkfolder(char* foldloc){
 	DIR *tr = opendir(addstrings(foldloc, "."));
 	bool folderexists = false;
@@ -60,8 +75,8 @@ bool checkfolder(char* foldloc){
 }
 
 void printarray(char *array[], int highlight, int offset, int max, int arraylength, int starty){
-	printf("\x1b[1;%dH", starty);
-	for (int i = 0; i < max && i < arraylength + offset; i++){
+	printf("\x1b[%d;1H", starty);
+	for (int i = 0; i < max && i < arraylength - offset; i++){
 		if (i + offset == highlight - 1) printf("\x1b[42m%s\x1b[0m", array[i + offset]);
 		else printf("%s", array[i + offset]);
 
