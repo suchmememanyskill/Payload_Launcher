@@ -154,14 +154,14 @@ void configmenu(){ //this still needs a keyboard impl
     strcpy(folders[item_amout - 1], "/payloads/");
 
     if(checkfolder("/bootloader/payloads/.")){
-        strcpy(folders[item_amout], "/bootloader/payloads/");
         folders[item_amout] = (char*) malloc (50);
+        strcpy(folders[item_amout], "/bootloader/payloads/");
         item_amout++;
     }
     
     if(checkfolder("/argon/payloads/.")){
-        strcpy(folders[item_amout], "/argon/payloads/");
         folders[item_amout] = (char*) malloc (50);
+        strcpy(folders[item_amout], "/argon/payloads/");
         item_amout++;
     }
 
@@ -253,7 +253,7 @@ void main_menu(){
 
             if (update) {
                 printarraynew(menulist, amount, highlight, offset, 5);
-                printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher main menu                                                      " RESET "Path: %s\n-----------------------" GREEN "\x1b[44;1H(A) Launch Payload\n" RED "(B) Change folder" RESET, shortenstring(folder, 70));
+                printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher main menu                                                      " RESET "Path: %s\n-----------------------" GREEN "\x1b[43;1H(A) Launch Payload\n" RED "(B) Change folder\n" YELLOW "(+) Exit" RESET, shortenstring(folder, 70));
                 printf(INV_WHITE BLACK "\x1b[1;55H%d / 500 payloads" RESET, amount);
                 update = false;
             }
