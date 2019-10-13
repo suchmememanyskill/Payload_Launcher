@@ -12,3 +12,6 @@ Works on atmosphere. Should also work on sx and reinx.
 ### Credits
 
 Uses part of the atmosphere code from [the atmosphere repo](https://github.com/Atmosphere-NX/Atmosphere/blob/master/troposphere/reboot_to_payload/source/main.c). Licence of the atmosphere repo is included as AMS_LICENCE.
+
+### Discord
+Yes, i have a discord, you can [join here](https://discord.gg/aH9rsuP)
