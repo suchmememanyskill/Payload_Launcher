@@ -10,7 +10,7 @@
 #define CYAN CONSOLE_CYAN
 #define BLUE CONSOLE_BLUE
 
-#define MAX_LINES 35
+#define MAX_LINES 34
 
 #define BUFSIZE 32768
 

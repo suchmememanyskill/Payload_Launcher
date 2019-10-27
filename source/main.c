@@ -198,7 +198,7 @@ void configmenu(){ //this still needs a keyboard impl
             char* keys = NULL;
             keys = (char*) malloc (512);
 
-            keys = keyboard("Input a folder. Start with /", 500);
+            keys = keyboard("Input a folder. Start and end with /", 500);
 
             if (checkfolder(addstrings(keys, ".")) && strcmp(keys, "")){
                 strcpy(folder, keys);
@@ -253,7 +253,7 @@ void main_menu(){
 
             if (update) {
                 printarraynew(menulist, amount, highlight, offset, 5);
-                printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher main menu                                                      " RESET "Path: %s\n-----------------------" GREEN "\x1b[42;1H(A) Launch Payload\n" RED "(B) Change folder\n" YELLOW "(+) Exit\n" BLUE "(-) Set payload as atmosphere reboot payload" RESET, shortenstring(folder, 70));
+                printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher main menu                                                      " RESET "Path: %s\n-----------------------" GREEN "\x1b[40;1H(A) Launch Payload\n" RED "(B) Change folder\n" CYAN "(X) Launch favorite payload         \n" MAGENTA "(Y) Set favorite payload                \n" YELLOW "(+) Exit\n" BLUE "(-) Set payload as atmosphere reboot payload" RESET, shortenstring(folder, 70));
                 printf(INV_WHITE BLACK "\x1b[1;55H%d / 500 payloads" RESET, amount);
                 update = false;
             }
@@ -271,6 +271,24 @@ void main_menu(){
                     printf( GREEN "\x1b[45;1HCopy successful                             " RESET);
                 else
                     printf( RED "\x1b[45;1HAn error occured (%d)                         " RESET, msgboxres);
+            }
+
+            if (kDown & KEY_Y){
+                strcpy(favorite, menulist[highlight + offset - 1]);
+                writeini();
+                printf( GREEN "\x1b[43;1H%s set as favorite!" RESET, shortenstring(menulist[highlight + offset - 1], 23));
+            }
+
+            if (kDown & KEY_X){
+                if (strcmp(favorite, "") == 0)
+                    printf( RED "\x1b[42;1HNo favorite payload is set!" RESET);
+                else if (access(addstrings(folder, favorite), F_OK) == -1){
+                    printf( RED "\x1b[42;1HFavorite payload file was not found!" RESET);
+                    strcpy(favorite, "");
+                    writeini();
+                }
+                else
+                    reboot(addstrings(folder, favorite));
             }
         }
         else
@@ -298,6 +316,8 @@ int main(int argc, char* argv[])
 
     while(!strcmp(folder, ""))
         configmenu();
+
+    consoleInit(NULL);
 
     loadfolder();
 
