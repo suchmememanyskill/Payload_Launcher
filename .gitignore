@@ -10,3 +10,5 @@ build/
 *.nso
 
 *.pfs0
+
+main_backup.c
