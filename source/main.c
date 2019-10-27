@@ -144,28 +144,32 @@ void loadfolder(){
 }
 
 void configmenu(){ //this still needs a keyboard impl
-    int highlight = 1, item_amout = 1;
+    int highlight = 1, item_amount = 1;
     bool update = true;
     char *folders[6];
 
     consoleInit(NULL);
 
     folders[0] = (char*) malloc (20);
-    strcpy(folders[item_amout - 1], "/payloads/");
+    strcpy(folders[item_amount - 1], "/payloads/");
 
     if(checkfolder("/bootloader/payloads/.")){
-        folders[item_amout] = (char*) malloc (50);
-        strcpy(folders[item_amout], "/bootloader/payloads/");
-        item_amout++;
+        folders[item_amount] = (char*) malloc (50);
+        strcpy(folders[item_amount], "/bootloader/payloads/");
+        item_amount++;
     }
     
     if(checkfolder("/argon/payloads/.")){
-        folders[item_amout] = (char*) malloc (50);
-        strcpy(folders[item_amout], "/argon/payloads/");
-        item_amout++;
+        folders[item_amount] = (char*) malloc (50);
+        strcpy(folders[item_amount], "/argon/payloads/");
+        item_amount++;
     }
 
-    printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher configuration menu                                             " RESET "Select your desired payload folder\n-----------------------" GREEN "\x1b[43;1H(A) Continue\n" RED "(B) Cancel\n" YELLOW "(X) Add custom path" RESET);
+    if(checkfolder("/.")){
+        folders[item_amount] = (char*) malloc (50);
+        strcpy(folders[item_amount], "/");
+        item_amount++;
+    }
 
     while(1){
         hidScanInput();
@@ -174,12 +178,12 @@ void configmenu(){ //this still needs a keyboard impl
         if (kDown & KEY_LSTICK_DOWN || kDown & KEY_DDOWN) highlight++, update = true;
         if (kDown & KEY_LSTICK_UP || kDown & KEY_DUP) highlight--, update = true;
 
-        if (highlight > item_amout) highlight = item_amout, update = false;
+        if (highlight > item_amount) highlight = item_amount, update = false;
         else if (highlight < 1) highlight = 1, update = false;
 
         if (update) {
-            //printarray(menulist, highlight, 0, 20, item_amout, 5);
-            printarraynew(folders, item_amout, highlight, 0, 5);
+            printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher configuration menu                                             " RESET "Select your desired payload folder\n-----------------------" GREEN "\x1b[43;1H(A) Continue\n" RED "(B) Cancel\n" YELLOW "(X) Add custom path" RESET);
+            printarraynew(folders, item_amount, highlight, 0, 5);
             update = false;
         }
 
@@ -207,6 +211,9 @@ void configmenu(){ //this still needs a keyboard impl
                 free(keys);
                 break;
             }
+            else
+                printf(RED "\x1b[45;1HInvalid path given!" RESET);
+
             free(keys);
         }
 
@@ -215,6 +222,13 @@ void configmenu(){ //this still needs a keyboard impl
         
         consoleUpdate(NULL);
     }
+
+    for (int i = 0; i < item_amount; i++){
+        if (folders[i] != NULL){
+            free(folders[i]);
+        }
+    }
+
 }
 
 void main_menu(){
@@ -321,30 +335,13 @@ int main(int argc, char* argv[])
 
     loadfolder();
 
-    //printf("\n%s\n%s\n\nMain test loop exited!", folder, favorite);
-
-    //consoleUpdate(NULL);
-
     main_menu();
 
-
-    /*
-    while (appletMainLoop()){
-        hidScanInput();
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        if (kDown & KEY_PLUS) break;
-        if (kDown & KEY_B) {
-            configmenu();
-            consoleInit(NULL);
-        }
-    }
-    */
-
-    /* for (int i = 0; i < 500; i++){
+    for (int i = 0; i < amount; i++){
         if (menulist[i] != NULL){
             free(menulist[i]);
         }
-    } */
+    }
 
     consoleExit(NULL);
     return 0;    

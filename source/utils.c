@@ -65,7 +65,7 @@ char* shortenstring(const char *in, int maxlength){
 }
 
 bool checkfolder(char* foldloc){
-	DIR *tr = opendir(addstrings(foldloc, "."));
+	DIR *tr = opendir(foldloc);
 	bool folderexists = false;
 	if (tr != NULL){
 			folderexists = true;
