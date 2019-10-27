@@ -139,3 +139,24 @@ int messagebox(const char *line1, const char *line2){
 	}
 }
 
+int copy(const char* src, const char* dst){
+    FILE* in = fopen(src, "rb");
+    FILE* out = fopen(dst, "wb");
+    if(in == NULL)
+        return -1;
+	if(out == NULL)
+		return -2;
+    else
+    {
+        size_t len = 0;
+        char buffer[BUFSIZE];
+        while((len = fread(buffer, 1, BUFSIZE, in)) > 0)
+            fwrite(buffer, 1, len, out);
+    }
+    if(in)
+        fclose(in);
+    if(out)
+        fclose(out);
+
+	return 0;
+}

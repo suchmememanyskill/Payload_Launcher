@@ -8,8 +8,11 @@
 #define YELLOW CONSOLE_YELLOW
 #define MAGENTA CONSOLE_MAGENTA
 #define CYAN CONSOLE_CYAN
+#define BLUE CONSOLE_BLUE
 
 #define MAX_LINES 35
+
+#define BUFSIZE 32768
 
 char* keyboard(char* message, size_t size);
 void userAppInit(void);
@@ -19,3 +22,4 @@ void printarray(char *array[], int highlight, int offset, int max, int arrayleng
 char* shortenstring(const char *in, int maxlength);
 void printarraynew(char *array[], int arraylength, int highlight, int offset, int starty);
 int messagebox(const char *line1, const char *line2);
+int copy(const char* src, const char* dst);

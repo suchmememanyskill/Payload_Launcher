@@ -198,7 +198,7 @@ void configmenu(){ //this still needs a keyboard impl
             char* keys = NULL;
             keys = (char*) malloc (512);
 
-            keys = keyboard("no u", 500);
+            keys = keyboard("Input a folder. Start with /", 500);
 
             if (checkfolder(addstrings(keys, ".")) && strcmp(keys, "")){
                 strcpy(folder, keys);
@@ -253,9 +253,24 @@ void main_menu(){
 
             if (update) {
                 printarraynew(menulist, amount, highlight, offset, 5);
-                printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher main menu                                                      " RESET "Path: %s\n-----------------------" GREEN "\x1b[43;1H(A) Launch Payload\n" RED "(B) Change folder\n" YELLOW "(+) Exit" RESET, shortenstring(folder, 70));
+                printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher main menu                                                      " RESET "Path: %s\n-----------------------" GREEN "\x1b[42;1H(A) Launch Payload\n" RED "(B) Change folder\n" YELLOW "(+) Exit\n" BLUE "(-) Set payload as atmosphere reboot payload" RESET, shortenstring(folder, 70));
                 printf(INV_WHITE BLACK "\x1b[1;55H%d / 500 payloads" RESET, amount);
                 update = false;
+            }
+
+            if (kDown & KEY_A){
+                msgboxres = messagebox("Do you want to launch:", menulist[highlight + offset - 1]);
+                if (msgboxres == 1)
+                    reboot(addstrings(folder, menulist[highlight + offset - 1]));
+                update = true;
+            }
+
+            if (kDown & KEY_MINUS){
+                msgboxres = copy(addstrings(folder, menulist[highlight + offset - 1]), "/atmosphere/reboot_payload.bin");
+                if (msgboxres == 0)
+                    printf( GREEN "\x1b[45;1HCopy successful                             " RESET);
+                else
+                    printf( RED "\x1b[45;1HAn error occured (%d)                         " RESET, msgboxres);
             }
         }
         else
@@ -265,14 +280,6 @@ void main_menu(){
             highlight = 1;
             configmenu();
             consoleInit(NULL);
-            update = true;
-        }
-
-        if (kDown & KEY_A){
-            msgboxres = messagebox("Do you want to launch:", menulist[highlight + offset - 1]);
-            if (msgboxres == 1)
-                reboot(addstrings(folder, menulist[highlight + offset - 1]));
-
             update = true;
         }
 
