@@ -284,7 +284,7 @@ void main_menu(){
                 if (msgboxres == 0)
                     printf( GREEN "\x1b[45;1HCopy successful                             " RESET);
                 else
-                    printf( RED "\x1b[45;1HAn error occured (%d)                         " RESET, msgboxres);
+                    printf( RED "\x1b[45;1HAn error occurred (%d)                        " RESET, msgboxres);
             }
 
             if (kDown & KEY_Y){
