@@ -325,6 +325,10 @@ void main_menu(){
 int main(int argc, char* argv[])
 {
     consoleInit(NULL);
+    
+    if (argc > 1)
+        if (access(argv[1], F_OK) != -1)
+            reboot(argv[1]);
 
     if (access("payload_launcher.ini", F_OK) != -1) loadini();
 
