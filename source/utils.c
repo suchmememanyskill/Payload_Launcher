@@ -9,14 +9,10 @@
 #include <switch.h>
 #include "utils.h"
 
-bool appletinit = false;
+void *heap_addr;
+extern char *fake_heap_end;
 
 char* keyboard(char* message, size_t size){
-	if (!appletinit){
-		userAppInit();
-		appletinit = true;
-	}
-
 	SwkbdConfig	skp; 
 	Result keyrc = swkbdCreate(&skp, 0);
 	char* out = NULL;
@@ -38,8 +34,11 @@ char* keyboard(char* message, size_t size){
 }
 
 void userAppInit(void){
-	void *addr = NULL;
-	if (svcSetHeapSize(&addr, 0x4000000) == (Result)-1) fatalSimple(0);
+    if(R_SUCCEEDED(svcSetHeapSize(&heap_addr, 0x4000000))) fake_heap_end = (char*)heap_addr + 0x4000000;
+}
+
+void userAppExit(void){
+    svcSetHeapSize(&heap_addr, ((u8*)envGetHeapOverrideAddr() + envGetHeapOverrideSize()) - (u8*)heap_addr);
 }
 
 char* addstrings(const char *s1, const char *s2){
