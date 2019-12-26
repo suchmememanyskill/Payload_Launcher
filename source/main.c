@@ -1,13 +1,12 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <dirent.h> 
-#include <unistd.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <stdbool.h>
+#include <stdio.h>
 #include <switch.h>
-#include "utils.h"
+#include <dirent.h> 
+#include <sys/stat.h>
+#include "menu.h"
+#include "sdl_helper.h"
+
+#define BUFSIZE 32768
 
 // ATMOSPHERE CODE -----------------------------------------------------------------
 
@@ -66,287 +65,295 @@ int reboot(const char *payloc){
 
     FILE *payload = fopen(payloc, "rb");
     
-    if (payload == NULL)
+    if (payload == NULL){
+        MakeNotification("Payload location invalid!", 200, COLOR_RED, COLOR_BLACK);
         return 2;
+    }
     else {
-    fread(g_reboot_payload, 1, sizeof(g_reboot_payload), payload);
-    fclose(payload);
-    reboot_to_payload();
+        fread(g_reboot_payload, 1, sizeof(g_reboot_payload), payload);
+        fclose(payload);
+        reboot_to_payload();
     }
 
     splExit();
     return 0;
 }
 
-char folder[512] = "", favorite[512] = "";
-char *menulist[500];
-int amount = 0;
-bool noitems = false;
+int reboottoRCM(){
+    Result rc = splInitialize();
 
-void loadini(){
-    char c;
-    int i = 0;
-    bool file = false;
+    if (R_FAILED(rc)) 
+        return 1;
+
+    rc = splSetConfig((SplConfigItem) 65001, 1);
+
+    if (R_FAILED(rc)) 
+        return 2;
     
-    FILE *ini = fopen("payload_launcher.ini", "r");
+    return 3;
+}
 
-    while ((c = fgetc(ini)) && !feof(ini)){
-        if (c == '\n'){
-            file = true;
-            folder[i+1] = '\0';
-            i = 0;
-            continue;
-        }
+void AddBasicInfo(){
+    InitControllerInfo();
+    AddControllerInfo("Select", BUTTON_A, KEY_A);
+    AddControllerInfo("Exit", BUTTON_PLUS, KEY_PLUS);
+}
 
-        if (!file) folder[i] = c;
-        else favorite[i] = c;
-
-        i++;
+int copy(const char* src, const char* dst){
+    FILE* in = fopen(src, "rb");
+    FILE* out = fopen(dst, "wb");
+    if(in == NULL)
+        return -1;
+	if(out == NULL)
+		return -2;
+    else
+    {
+        size_t len = 0;
+        char buffer[BUFSIZE];
+        while((len = fread(buffer, 1, BUFSIZE, in)) > 0)
+            fwrite(buffer, 1, len, out);
     }
+    if(in)
+        fclose(in);
+    if(out)
+        fclose(out);
 
-    favorite[i] = '\0';
+	return 0;
+}
 
-    if (!checkfolder(addstrings(folder, ".")))
-        strcpy(folder, "");
+void *heap_addr;
+extern char *fake_heap_end;
 
+/*
+void userAppInit(void){
+    if(R_SUCCEEDED(svcSetHeapSize(&heap_addr, 0x4000000))) fake_heap_end = (char*)heap_addr + 0x4000000;
+}
+
+void userAppExit(void){
+    svcSetHeapSize(&heap_addr, ((u8*)envGetHeapOverrideAddr() + envGetHeapOverrideSize()) - (u8*)heap_addr);
+}
+*/
+
+bool checkfolder(char* foldloc){
+	DIR *tr = opendir(foldloc);
+	bool folderexists = false;
+	if (tr != NULL){
+			folderexists = true;
+    	}
+    closedir(tr);
+    return folderexists;
+}
+
+char config[2][255] = {"", ""};
+
+int loadini(){
+    FILE *ini = fopen("payload_launcher.ini", "r");
+    if (ini == NULL)
+        return 1;
+
+    fscanf(ini, "%s\n%s", config[0], config[1]);
     fclose(ini);
+    return 0;
 }
 
 void writeini(){
-     FILE *ini = fopen("payload_launcher.ini", "w+");
-     fprintf(ini, "%s\n%s", folder, favorite);
-     fclose(ini);
+    FILE *ini = fopen("payload_launcher.ini", "w+");
+    fprintf(ini, "%s\n%s", config[0], config[1]);
+    fclose(ini);
 }
 
-void additem(const char *item, int spot){
-    size_t size = strlen(item) + 1;
-    menulist[spot] = (char*) malloc (size);
-    strcpy(menulist[spot], item);
+menu_item extraMenu[] = {
+    {"Reboot to RCM", 0},
+    {"Reboot to atmosphere/reboot_payload.bin", 0}
+};
+
+int folderAmount = 1;
+menu_item folderMenu[5] = {
+    {"/payloads/", 0}
+};
+
+int payloadAmount = 0;
+menu_item payloadMenu[500];
+
+menu_item payloadErrorMenu[1] = {
+    {"Error! Invalid or empty folder. Change the folder or put payloads in the folder.", 0}
+};
+
+char* keyboard(char* message, size_t size){
+	SwkbdConfig	skp; 
+	Result keyrc = swkbdCreate(&skp, 0);
+	char* out = NULL;
+	out = (char *)calloc(sizeof(char), size + 1);
+
+	if (R_SUCCEEDED(keyrc) && out != NULL){
+		swkbdConfigMakePresetDefault(&skp);
+		swkbdConfigSetGuideText(&skp, message);
+		keyrc = swkbdShow(&skp, out, size);
+		swkbdClose(&skp);	
+	}
+
+	else {
+	free(out);
+	out = NULL;
+	}
+
+	return (out);
 }
 
-void loadfolder(){
-    struct dirent *de;  
-    DIR *dr = opendir(addstrings(folder, "."));
+void FillFolderMenu(){
+    if (checkfolder("/bootloader/payloads/."))
+        folderMenu[folderAmount++] = (menu_item){"/bootloader/payloads/", 0};
 
-    amount = 0;
+    if (checkfolder("/argon/payloads/."))
+        folderMenu[folderAmount++] = (menu_item){"/argon/payloads/", 0};
 
-    while ((de = readdir(dr)) != NULL && amount < 500){
+    if (checkfolder("/."))
+        folderMenu[folderAmount++] = (menu_item){"/", 0};
+
+    folderMenu[folderAmount++] = (menu_item){"Set custom path...", 0};
+}
+
+void readFolder(char *path){
+    struct dirent *de;
+    DIR *dr = opendir(path);
+    payloadAmount = 0;
+
+    while ((de = readdir(dr)) != NULL && payloadAmount < 500){
         if (strstr(de->d_name, ".bin") != NULL){
-            additem(shortenstring(de->d_name, 79), amount);
-            amount++;
+            strcpy(payloadMenu[payloadAmount].name, de->d_name);
+            payloadMenu[payloadAmount].property = 0;
+            payloadAmount++;
         }
     }
-
-    if (amount == 0)
-        noitems = true;
-    else
-        noitems = false;
 }
 
-void configmenu(){ //this still needs a keyboard impl
-    int highlight = 1, item_amount = 1;
-    bool update = true;
-    char *folders[6];
-
-    consoleInit(NULL);
-
-    folders[0] = (char*) malloc (20);
-    strcpy(folders[item_amount - 1], "/payloads/");
-
-    if(checkfolder("/bootloader/payloads/.")){
-        folders[item_amount] = (char*) malloc (50);
-        strcpy(folders[item_amount], "/bootloader/payloads/");
-        item_amount++;
+char* addstrings(const char *s1, const char *s2){
+    static char *result;
+    if (result != NULL){
+        free(result);
+        result = NULL;
     }
-    
-    if(checkfolder("/argon/payloads/.")){
-        folders[item_amount] = (char*) malloc (50);
-        strcpy(folders[item_amount], "/argon/payloads/");
-        item_amount++;
-    }
+    result = malloc(strlen(s1) + strlen(s2) + 1); 
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
 
-    if(checkfolder("/.")){
-        folders[item_amount] = (char*) malloc (50);
-        strcpy(folders[item_amount], "/");
-        item_amount++;
-    }
+int main(int argc, char *argv[]){
+    int menuselect = 1;
+    u64 kCheck = 0;
+
+    Result rc;
+    rc = plInitialize();
+    SDLInit();
+
+    InitTopMenu();
+    AddTopMenu("Launch");
+    AddTopMenu("Payload Folder");
+    AddTopMenu("Extras");
+
+    FillFolderMenu();
+    loadini();
 
     while(1){
-        hidScanInput();
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+        AddBasicInfo();
+        switch (menuselect){
+            case 1:
+                readFolder(addstrings(config[0], "."));
+                if (payloadAmount == 0){
+                    InitControllerInfo();
+                    AddControllerInfo("Exit", BUTTON_PLUS, KEY_PLUS);
+                    kCheck = MakeBasicMenu(payloadErrorMenu, 1);
+                }
+                else {
+                    AddControllerInfo("Set AMS Payload", BUTTON_MINUS, KEY_MINUS);
+                    AddControllerInfo("Set Favorite Payload", BUTTON_Y, KEY_Y);
 
-        if (kDown & KEY_LSTICK_DOWN || kDown & KEY_DDOWN) highlight++, update = true;
-        if (kDown & KEY_LSTICK_UP || kDown & KEY_DUP) highlight--, update = true;
+                    if (strcmp(config[1], ""))
+                        AddControllerInfo("Launch Favorite Payload", BUTTON_X, KEY_X);
 
-        if (highlight > item_amount) highlight = item_amount, update = false;
-        else if (highlight < 1) highlight = 1, update = false;
+                    kCheck = MakeBasicMenu(payloadMenu, payloadAmount);
+                }
 
-        if (update) {
-            printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher configuration menu                                             " RESET "Select your desired payload folder\n-----------------------" GREEN "\x1b[43;1H(A) Continue\n" RED "(B) Cancel\n" YELLOW "(X) Add custom path" RESET);
-            printarraynew(folders, item_amount, highlight, 0, 5);
-            update = false;
-        }
+                if (kCheck & KEY_A){
+                    if (MakeMessageBox("Back", "Launch", "Reboot to payload", addstrings("Do you want to reboot to: ", payloadMenu[GetSelection() - 1].name)))
+                        reboot(addstrings(config[0], payloadMenu[GetSelection() - 1].name));
+                }
 
-        if (kDown & KEY_A) {
-            if (highlight == 1)
-                if (!checkfolder("/payloads/."))
-                    mkdir("sdmc:/payloads/", 0777);
+                if (kCheck & KEY_MINUS){
+                    if (!copy(addstrings(config[0], payloadMenu[GetSelection() - 1].name), "/atmosphere/reboot_payload.bin"))
+                        MakeNotification("Copy Successful!", 200, COLOR_GREEN, COLOR_BLACK);
+                    else
+                        MakeNotification("Copy Failed!", 200, COLOR_RED, COLOR_BLACK);
+                }
 
-            strcpy(folder, folders[highlight - 1]);
-            writeini();
-            loadfolder();
-            break;
-        }
+                if (kCheck & KEY_Y){
+                    strcpy(config[1], addstrings(config[0], payloadMenu[GetSelection() - 1].name));
+                    writeini();
+                    MakeNotification("Favorite payload set!", 200, COLOR_GREEN, COLOR_BLACK);
+                }
 
-        if (kDown & KEY_X) {
-            char* keys = NULL;
-            keys = (char*) malloc (512);
+                if (kCheck & KEY_X){
+                    if (reboot(config[1])){
+                        strcpy(config[1], "");
+                        writeini();
+                    }
+                }
 
-            keys = keyboard("Input a folder. Start and end with /", 500);
-
-            if (checkfolder(addstrings(keys, ".")) && strcmp(keys, "")){
-                strcpy(folder, keys);
-                writeini();
-                loadfolder();
-                free(keys);
                 break;
-            }
-            else
-                printf(RED "\x1b[45;1HInvalid path given!" RESET);
+            case 2:
+                kCheck = MakeBasicMenu(folderMenu, folderAmount);
 
-            free(keys);
-        }
+                if (kCheck & KEY_A && GetSelection() != folderAmount){
+                    strcpy(config[0], folderMenu[GetSelection() - 1].name);
 
-        if (kDown & KEY_B)
-            break;
-        
-        consoleUpdate(NULL);
-    }
+                    if (GetSelection() == 1)
+                        mkdir("sdmc:/payloads/", 0777);
 
-    for (int i = 0; i < item_amount; i++){
-        if (folders[i] != NULL){
-            free(folders[i]);
-        }
-    }
-
-}
-
-void main_menu(){
-    int highlight = 1, offset = 0, msgboxres = 0;
-    bool update = true;
-
-    while(1){
-        hidScanInput();
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
-
-        if (!noitems){
-            if (kDown & KEY_LSTICK_DOWN || kDown & KEY_DDOWN) 
-                highlight++, update = true;
-
-            if (kDown & KEY_LSTICK_UP || kDown & KEY_DUP) 
-                highlight--, update = true;
-
-            if (kHeld & KEY_RSTICK_DOWN)
-                highlight++, update = true;
-
-            if (kHeld & KEY_RSTICK_UP)
-                highlight--, update = true;
-
-            if (highlight + offset > amount) 
-                highlight = amount - offset, update = false;
-
-            else if (highlight > MAX_LINES) 
-                highlight = MAX_LINES, offset++;
-
-            if (highlight < 1 && offset > 0) 
-                highlight = 1, offset--;
-
-            else if (highlight < 1 && offset <= 0) 
-                highlight = 1, update = false;
-
-            if (update) {
-                printarraynew(menulist, amount, highlight, offset, 5);
-                printf(INV_WHITE BLACK "\x1b[1;1HPayload_Launcher main menu                                                      " RESET "Path: %s\n-----------------------" GREEN "\x1b[40;1H(A) Launch Payload\n" RED "(B) Change folder\n" CYAN "(X) Launch favorite payload         \n" MAGENTA "(Y) Set favorite payload                \n" YELLOW "(+) Exit\n" BLUE "(-) Set payload as atmosphere reboot payload" RESET, shortenstring(folder, 70));
-                printf(INV_WHITE BLACK "\x1b[1;55H%d / 500 payloads" RESET, amount);
-                update = false;
-            }
-
-            if (kDown & KEY_A){
-                msgboxres = messagebox("Do you want to launch:", menulist[highlight + offset - 1]);
-                if (msgboxres == 1)
-                    reboot(addstrings(folder, menulist[highlight + offset - 1]));
-                update = true;
-            }
-
-            if (kDown & KEY_MINUS){
-                msgboxres = copy(addstrings(folder, menulist[highlight + offset - 1]), "/atmosphere/reboot_payload.bin");
-                if (msgboxres == 0)
-                    printf( GREEN "\x1b[45;1HCopy successful                             " RESET);
-                else
-                    printf( RED "\x1b[45;1HAn error occurred (%d)                        " RESET, msgboxres);
-            }
-
-            if (kDown & KEY_Y){
-                strcpy(favorite, menulist[highlight + offset - 1]);
-                writeini();
-                printf( GREEN "\x1b[43;1H%s set as favorite!" RESET, shortenstring(menulist[highlight + offset - 1], 23));
-            }
-
-            if (kDown & KEY_X){
-                if (strcmp(favorite, "") == 0)
-                    printf( RED "\x1b[42;1HNo favorite payload is set!" RESET);
-                else if (access(addstrings(folder, favorite), F_OK) == -1){
-                    printf( RED "\x1b[42;1HFavorite payload file was not found!" RESET);
-                    strcpy(favorite, "");
+                    MakeNotification(addstrings(folderMenu[GetSelection() - 1].name, " set as Folder!"), 200, COLOR_GREEN, COLOR_BLACK);
                     writeini();
                 }
-                else
-                    reboot(addstrings(folder, favorite));
-            }
-        }
-        else
-            printf(RED "\x1b[3;1HNo payloads detected! press B to go back to the configuration menu" RESET);
 
-        if (kDown & KEY_B){
-            highlight = 1;
-            configmenu();
-            consoleInit(NULL);
-            update = true;
+                else if (kCheck & KEY_A && GetSelection() == folderAmount){
+                    char *temp;
+                    temp = keyboard("Enter a path. Begin and end with /", 254);
+
+                    if (checkfolder(addstrings(temp, ".")) && strcmp(temp, "")){
+                        strcpy(config[0], temp);
+                        MakeNotification(addstrings(temp, " set as Folder!"), 200, COLOR_GREEN, COLOR_BLACK);
+                        writeini();
+                    }
+                    else if (strcmp(temp, "")){
+                        MakeNotification("Invalid path!", 200, COLOR_RED, COLOR_BLACK);
+                    }
+                }
+
+                break;
+            case 3:
+                kCheck = MakeBasicMenu(extraMenu, 2);
+
+                if (kCheck & KEY_A){
+                    switch (GetSelection()){
+                        case 1: // reboot to rcm
+                            if (MakeMessageBox("Back", "Reboot to RCM", "Reboot to RCM", "Are you sure you want to reboot to RCM?"))
+                                reboottoRCM();
+                            break;
+                        
+                        case 2: //reboot to ams payload
+                            if (MakeMessageBox("Back", "Launch", "Reboot to Payload", "Do you want to reboot to reboot_payload.bin?"))
+                                reboot("/atmosphere/reboot_payload.bin");
+                            break;
+                    }
+                }
+                break;
         }
 
-        if (kDown & KEY_PLUS)
+        menuselect = GetTopMenuSelection();
+
+        if (kCheck & KEY_PLUS)
             break;
-        
-        consoleUpdate(NULL);
-    }
-}
-
-int main(int argc, char* argv[])
-{    
-    if (argc > 1)
-        if (access(argv[1], F_OK) != -1)
-            reboot(argv[1]);
-
-    consoleInit(NULL);
-
-    if (access("payload_launcher.ini", F_OK) != -1) loadini();
-
-    while(!strcmp(folder, ""))
-        configmenu();
-
-    consoleInit(NULL);
-
-    loadfolder();
-
-    main_menu();
-
-    for (int i = 0; i < amount; i++){
-        if (menulist[i] != NULL){
-            free(menulist[i]);
-        }
     }
 
-    consoleExit(NULL);
-    return 0;    
+    SDLDeInit();
+    return 0;
 }
