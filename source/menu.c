@@ -120,9 +120,9 @@ u32 MakeBasicMenu(menu_item items[], int amount){
         u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
         ClearScreenWithElements();
 
-        if ((kDown & KEY_LSTICK_UP || kHeld & KEY_RSTICK_UP))
+        if ((kDown & KEY_LSTICK_UP || kHeld & KEY_RSTICK_UP || kDown & KEY_DUP))
             selection--;
-        if ((kDown & KEY_LSTICK_DOWN || kHeld & KEY_RSTICK_DOWN))
+        if ((kDown & KEY_LSTICK_DOWN || kHeld & KEY_RSTICK_DOWN || kDown & KEY_DDOWN))
             selection++;
 
         if (selection + offset > amount)
