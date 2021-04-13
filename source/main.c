@@ -244,7 +244,7 @@ int main(int argc, char *argv[]){
     u64 kCheck = 0;
 
     Result rc;
-    rc = plInitialize();
+    rc = plInitialize(0);
     SDLInit();
 
     InitTopMenu();
