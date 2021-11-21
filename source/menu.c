@@ -6,6 +6,12 @@
 controller_info controllerinfo[10];
 int controllerinfocount = 0;
 u32 controllermap = 0;
+PadState pad;
+
+void InitController(){
+    padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+    padInitializeDefault(&pad);
+}
 
 void InitControllerInfo(){
     controllerinfocount = 0;
@@ -115,9 +121,9 @@ u32 MakeBasicMenu(menu_item items[], int amount){
     selection = 1, offset = 0;
 
     while (1){
-        hidScanInput();
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
+        padUpdate(&pad);
+        u64 kDown = padGetButtonsDown(&pad);
+        u64 kHeld = padGetButtons(&pad);
         ClearScreenWithElements();
 
         if ((kDown & KEY_LSTICK_UP || kHeld & KEY_RSTICK_UP || kDown & KEY_DUP))
@@ -177,8 +183,8 @@ bool MakeMessageBox(char *optionfalse, char *optiontrue, char *title, char *mess
     RenderFrame();
 
     while (1){
-        hidScanInput();
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
+        padUpdate(&pad);
+        u64 kDown = padGetButtonsDown(&pad);
 
         if (kDown & KEY_A)
             return true;

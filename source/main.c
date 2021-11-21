@@ -254,6 +254,7 @@ int main(int argc, char *argv[]){
 
     FillFolderMenu();
     loadini();
+    InitController();
 
     while(1){
         AddBasicInfo();

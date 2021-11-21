@@ -39,7 +39,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 APP_TITLE   := Payload Launcher
 APP_AUTHOR  := Such Meme, Many Skill
-APP_VERSION := 3.0.1
+APP_VERSION := 3.0.2
 
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
